@@ -1,5 +1,5 @@
-// app.js - versión corregida para activación (DOMContentLoaded)
-// Basada en los archivos originales subidos: index.html y app.js.  [oai_citation:2‡index.html](sediment://file_00000000baa471f5a41cb4f8187483fc)  [oai_citation:3‡app.js](sediment://file_000000009ef871f5b927b21d08b5ca9c)
+// app.js — versión corregida (incluye lógica tablas consistente con bloques)
+// Basado en tu archivo original (revisado).  [oai_citation:2‡app.js](sediment://file_00000000e988720e8748549491be79b8)
 
 let config = JSON.parse(localStorage.getItem("config")) || {
   maderas: {
@@ -59,17 +59,18 @@ function toggleManualOverride() {
   }
 }
 
+// ---- Ajuste: ahora opera sobre el selector tipoTabla (no cepilladaTabla) ----
 function toggleManualOverrideTabla() {
   const input = document.getElementById("extraManualTabla");
   const manual = parseFloat((input && input.value) || "0");
-  const cepilladaEl = document.getElementById("cepilladaTabla");
-  if (!cepilladaEl) return;
+  const tipoTablaEl = document.getElementById("tipoTabla");
+  if (!tipoTablaEl) return;
   if (manual > 0) {
-    cepilladaEl.disabled = true;
-    cepilladaEl.style.opacity = "0.5";
+    tipoTablaEl.disabled = true;
+    tipoTablaEl.style.opacity = "0.5";
   } else {
-    cepilladaEl.disabled = false;
-    cepilladaEl.style.opacity = "1";
+    tipoTablaEl.disabled = false;
+    tipoTablaEl.style.opacity = "1";
   }
 }
 
@@ -77,9 +78,9 @@ function toggleManualOverrideTabla() {
 function calcular() {
   const maderaEl = document.getElementById("madera");
   const madera = maderaEl ? maderaEl.value : null;
-  const ancho = parseFloat(document.getElementById("ancho").value);
-  const largo = parseFloat(document.getElementById("largo").value);
-  const altura = parseFloat(document.getElementById("altura").value);
+  const ancho = parseFloat(document.getElementById("ancho").value || "0");
+  const largo = parseFloat(document.getElementById("largo").value || "0");
+  const altura = parseFloat(document.getElementById("altura").value || "0");
   const tipoVentaEl = document.getElementById("tipoVenta");
   const tipoVenta = tipoVentaEl ? tipoVentaEl.value : "BRUTO";
   const manualInput = parseFloat(document.getElementById("extraManual").value || "0");
@@ -127,22 +128,30 @@ function guardarVenta() {
 
 /* ---------- TABLAS ---------- */
 function calcularTabla() {
-  const madera = document.getElementById("maderaTabla").value;
-  const ancho = parseFloat(document.getElementById("anchoTabla").value);
-  const grosor = parseFloat(document.getElementById("grosorTabla").value);
-  const altura = parseFloat(document.getElementById("alturaTabla").value);
-  const cantidad = parseFloat(document.getElementById("cantidadTabla").value);
-  const cepillada = document.getElementById("cepilladaTabla").value;
+  const maderaEl = document.getElementById("maderaTabla");
+  const madera = maderaEl ? maderaEl.value : null;
+
+  const ancho = parseFloat(document.getElementById("anchoTabla").value || "0");   // pulgadas
+  const grosor = parseFloat(document.getElementById("grosorTabla").value || "0"); // cm (como ustedes usan)
+  const altura = parseFloat(document.getElementById("alturaTabla").value || "0"); // en pies
+  const cantidad = parseFloat(document.getElementById("cantidadTabla").value || "0");
+
+  const tipoTablaEl = document.getElementById("tipoTabla");
+  const tipoTabla = tipoTablaEl ? tipoTablaEl.value : "ASERRADO";
+
   const manualTabla = parseFloat(document.getElementById("extraManualTabla").value || "0");
 
+  // validaciones básicas
   if (!ancho || !grosor || !altura || !cantidad || !madera) {
-    alert("Completa todos los campos");
+    alert("Completa todos los campos de la tabla (ancho, grosor, altura, cantidad y tipo de madera).");
     return;
   }
 
+  // Fórmula: (ancho * grosor * altura) / 12 --> pie unitario
   const pieUnitario = (ancho * grosor * altura) / 12;
   const piesTotales = Math.round(pieUnitario * cantidad);
 
+  // mostrar pies totales
   const piesEl = document.getElementById("piesTablaTot");
   if (piesEl) piesEl.textContent = "Pies totales: " + piesTotales;
 
@@ -150,14 +159,21 @@ function calcularTabla() {
   const valorBase = piesTotales * maderaCfg.publico;
   const costo = piesTotales * maderaCfg.costo;
 
+  // lógica de procesos (coherente con bloques)
   let extraPorDefecto = 0;
-  if (cepillada === "SI") extraPorDefecto = piesTotales * config.cepillado;
+  if (tipoTabla === "ASERRADO") {
+    extraPorDefecto = piesTotales * config.aserrado;
+  } else if (tipoTabla === "ASERRADO+CEPILLADO") {
+    extraPorDefecto = piesTotales * (config.aserrado + config.cepillado);
+  }
 
-  let extra = (manualTabla > 0) ? manualTabla : extraPorDefecto;
+  // override manual anula cálculo automático
+  const extra = (manualTabla > 0) ? manualTabla : extraPorDefecto;
 
   const total = Math.round(valorBase + extra);
   const utilidad = Math.round(total - costo);
 
+  // mostrar resultados
   const resEl = document.getElementById("resultadoTabla");
   if (resEl) resEl.textContent = "$" + total.toLocaleString();
 
