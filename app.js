@@ -1,4 +1,5 @@
-/* app.js - mejora: edición/borrado en Config + icono tablas + robustez */
+// app.js - versión corregida para activación (DOMContentLoaded)
+// Basada en los archivos originales subidos: index.html y app.js.  [oai_citation:2‡index.html](sediment://file_00000000baa471f5a41cb4f8187483fc)  [oai_citation:3‡app.js](sediment://file_000000009ef871f5b927b21d08b5ca9c)
 
 let config = JSON.parse(localStorage.getItem("config")) || {
   maderas: {
@@ -12,16 +13,15 @@ let config = JSON.parse(localStorage.getItem("config")) || {
 
 /* ---------- Utils ---------- */
 function safeKey(name) {
-  // ID-friendly key
   return name.replace(/\s+/g, '__');
 }
 
 /* ---------- Navegación ---------- */
 function mostrar(id) {
   document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
-  document.getElementById(id).classList.add("activa");
+  const el = document.getElementById(id);
+  if (el) el.classList.add("activa");
 
-  // Si abrimos config, forzamos recargar UI para reflejar cambios
   if (id === 'config') cargarConfigUI();
 }
 
@@ -46,7 +46,8 @@ function cargarMaderas() {
 
 /* ---------- UX helpers: override toggle ---------- */
 function toggleManualOverride() {
-  const manual = parseFloat(document.getElementById("extraManual").value || "0");
+  const input = document.getElementById("extraManual");
+  const manual = parseFloat((input && input.value) || "0");
   const tipoVentaEl = document.getElementById("tipoVenta");
   if (!tipoVentaEl) return;
   if (manual > 0) {
@@ -59,7 +60,8 @@ function toggleManualOverride() {
 }
 
 function toggleManualOverrideTabla() {
-  const manual = parseFloat(document.getElementById("extraManualTabla").value || "0");
+  const input = document.getElementById("extraManualTabla");
+  const manual = parseFloat((input && input.value) || "0");
   const cepilladaEl = document.getElementById("cepilladaTabla");
   if (!cepilladaEl) return;
   if (manual > 0) {
@@ -73,49 +75,48 @@ function toggleManualOverrideTabla() {
 
 /* ---------- BLOQUES ---------- */
 function calcular() {
-  const madera = document.getElementById("madera").value;
+  const maderaEl = document.getElementById("madera");
+  const madera = maderaEl ? maderaEl.value : null;
   const ancho = parseFloat(document.getElementById("ancho").value);
   const largo = parseFloat(document.getElementById("largo").value);
   const altura = parseFloat(document.getElementById("altura").value);
-  const tipoVenta = document.getElementById("tipoVenta").value;
+  const tipoVentaEl = document.getElementById("tipoVenta");
+  const tipoVenta = tipoVentaEl ? tipoVentaEl.value : "BRUTO";
   const manualInput = parseFloat(document.getElementById("extraManual").value || "0");
 
-  if (!ancho || !largo || !altura) {
+  if (!ancho || !largo || !altura || !madera) {
     alert("Completa todas las medidas");
     return;
   }
 
-  // pies redondeados
   const pies = Math.round((ancho * largo * altura) / 12);
-  document.getElementById("piesBloque").textContent = "Pies: " + pies;
+  const piesEl = document.getElementById("piesBloque");
+  if (piesEl) piesEl.textContent = "Pies: " + pies;
 
-  const valorBase = pies * config.maderas[madera].publico;
-  const costo = pies * config.maderas[madera].costo;
+  const maderaCfg = (config.maderas && config.maderas[madera]) || { costo:0, publico:0 };
+  const valorBase = pies * maderaCfg.publico;
+  const costo = pies * maderaCfg.costo;
 
-  // extra por defecto (por pie)
   let extraPorDefecto = 0;
   if (tipoVenta === "ASERRADO") extraPorDefecto = pies * config.aserrado;
   if (tipoVenta === "ASERRADO+CEPILLADO") extraPorDefecto = pies * (config.aserrado + config.cepillado);
 
-  // OVERRIDE MANUAL FORZADO: si manualInput > 0 -> uso EXACTO y se ignoran procesos
-  let extra = 0;
-  if (manualInput > 0) {
-    extra = manualInput;
-  } else {
-    extra = extraPorDefecto;
-  }
+  let extra = (manualInput > 0) ? manualInput : extraPorDefecto;
 
   const total = Math.round(valorBase + extra);
   const utilidad = Math.round(total - costo);
 
-  document.getElementById("resultado").textContent = "$" + total.toLocaleString();
-  document.getElementById("utilidad").textContent = "Utilidad: $" + utilidad.toLocaleString();
+  const resEl = document.getElementById("resultado");
+  if (resEl) resEl.textContent = "$" + total.toLocaleString();
+
+  const utilEl = document.getElementById("utilidad");
+  if (utilEl) utilEl.textContent = "Utilidad: $" + utilidad.toLocaleString();
 }
 
 function guardarVenta() {
-  try { calcular(); } catch(e){ /* ignore */ }
+  try { calcular(); } catch(e){ console.warn(e); }
 
-  const totalTexto = document.getElementById("resultado").textContent;
+  const totalTexto = (document.getElementById("resultado") && document.getElementById("resultado").textContent) || "";
   if (!totalTexto || totalTexto === "$0") {
     alert("Primero calcula la venta");
     return;
@@ -134,42 +135,39 @@ function calcularTabla() {
   const cepillada = document.getElementById("cepilladaTabla").value;
   const manualTabla = parseFloat(document.getElementById("extraManualTabla").value || "0");
 
-  if (!ancho || !grosor || !altura || !cantidad) {
+  if (!ancho || !grosor || !altura || !cantidad || !madera) {
     alert("Completa todos los campos");
     return;
   }
 
-  // pie unitario puede ser decimal — pies totales redondeados
   const pieUnitario = (ancho * grosor * altura) / 12;
   const piesTotales = Math.round(pieUnitario * cantidad);
 
-  document.getElementById("piesTablaTot").textContent = "Pies totales: " + piesTotales;
+  const piesEl = document.getElementById("piesTablaTot");
+  if (piesEl) piesEl.textContent = "Pies totales: " + piesTotales;
 
-  const valorBase = piesTotales * config.maderas[madera].publico;
-  const costo = piesTotales * config.maderas[madera].costo;
+  const maderaCfg = (config.maderas && config.maderas[madera]) || { costo:0, publico:0 };
+  const valorBase = piesTotales * maderaCfg.publico;
+  const costo = piesTotales * maderaCfg.costo;
 
-  // extra por defecto (por pie) aplicable si cepillada
   let extraPorDefecto = 0;
   if (cepillada === "SI") extraPorDefecto = piesTotales * config.cepillado;
 
-  // OVERRIDE MANUAL FORZADO para tablas: si manualTabla>0 -> uso EXACTO
-  let extra = 0;
-  if (manualTabla > 0) {
-    extra = manualTabla;
-  } else {
-    extra = extraPorDefecto;
-  }
+  let extra = (manualTabla > 0) ? manualTabla : extraPorDefecto;
 
   const total = Math.round(valorBase + extra);
   const utilidad = Math.round(total - costo);
 
-  document.getElementById("resultadoTabla").textContent = "$" + total.toLocaleString();
-  document.getElementById("utilidadTabla").textContent = "Utilidad: $" + utilidad.toLocaleString();
+  const resEl = document.getElementById("resultadoTabla");
+  if (resEl) resEl.textContent = "$" + total.toLocaleString();
+
+  const utilEl = document.getElementById("utilidadTabla");
+  if (utilEl) utilEl.textContent = "Utilidad: $" + utilidad.toLocaleString();
 }
 
 function guardarVentaTabla() {
-  try { calcularTabla(); } catch(e){ /* ignore */ }
-  const totalTexto = document.getElementById("resultadoTabla").textContent;
+  try { calcularTabla(); } catch(e){ console.warn(e); }
+  const totalTexto = (document.getElementById("resultadoTabla") && document.getElementById("resultadoTabla").textContent) || "";
   if (!totalTexto || totalTexto === "$0") {
     alert("Primero calcula la venta");
     return;
@@ -185,7 +183,6 @@ function guardarEnStorage(total) {
 
   ventas.push({ fecha: hoy, total });
 
-  // limpiar >7 días
   ventas = ventas.filter(v => {
     const fechaVenta = new Date(v.fecha);
     const diff = (new Date() - fechaVenta) / (1000 * 60 * 60 * 24);
@@ -205,16 +202,19 @@ function actualizarResumen() {
     .filter(v => v.fecha === hoy)
     .reduce((sum, v) => sum + v.total, 0);
 
-  document.getElementById("resumenSemana").textContent =
-    "Ventas hoy: $" + ventasHoy.toLocaleString();
+  const el = document.getElementById("resumenSemana");
+  if (el) el.textContent = "Ventas hoy: $" + ventasHoy.toLocaleString();
 }
 
 /* ---------- CONFIG UI (edición + borrado) ---------- */
 function cargarConfigUI() {
-  document.getElementById("configAserrado").value = config.aserrado;
-  document.getElementById("configCepillado").value = config.cepillado;
+  const asErr = document.getElementById("configAserrado");
+  const ceP = document.getElementById("configCepillado");
+  if (asErr) asErr.value = config.aserrado;
+  if (ceP) ceP.value = config.cepillado;
 
   const contenedor = document.getElementById("listaMaderas");
+  if (!contenedor) return;
   contenedor.innerHTML = "";
 
   Object.keys(config.maderas).forEach(nombre => {
@@ -244,7 +244,6 @@ function cargarConfigUI() {
 }
 
 function guardarConfig() {
-  // procesos
   config.aserrado = parseFloat(document.getElementById("configAserrado").value || 0);
   config.cepillado = parseFloat(document.getElementById("configCepillado").value || 0);
 
@@ -256,7 +255,7 @@ function guardarConfig() {
     const elCosto = document.getElementById("costo_" + key);
     const elPublico = document.getElementById("publico_" + key);
 
-    if (!elNombre) return; // por seguridad
+    if (!elNombre) return;
 
     const nuevoNombre = elNombre.value.trim();
     const nuevoCosto = parseFloat(elCosto.value || 0);
@@ -330,16 +329,89 @@ function agregarMadera() {
   document.getElementById("nuevaMaderaPublico").value = "";
 }
 
-/* ---------- Inicializar ---------- */
-window.onload = function () {
+/* ---------- Inicializar (DOMContentLoaded) ---------- */
+document.addEventListener('DOMContentLoaded', function () {
+  // cargar configuración
   config = JSON.parse(localStorage.getItem("config")) || config;
   cargarMaderas();
   actualizarResumen();
   cargarConfigUI();
+
+  // Activación simple (solo si no está activa)
+  try {
+    const activa = localStorage.getItem("licenciaActiva");
+    const overlay = document.getElementById("licencia-overlay");
+    const licenciaInput = document.getElementById("licencia-input");
+
+    if (!overlay) {
+      console.warn("No se encontró #licencia-overlay en el DOM");
+    } else {
+      if (!activa) {
+        overlay.style.display = "flex";
+        // foco en input si existe
+        if (licenciaInput) {
+          licenciaInput.focus();
+        }
+      } else {
+        overlay.style.display = "none";
+      }
+    }
+  } catch (err) {
+    console.warn("Error comprobando licencia:", err);
+  }
 
   // listeners para comportamiento override UX
   const em = document.getElementById("extraManual");
   if (em) em.addEventListener("input", toggleManualOverride);
   const emt = document.getElementById("extraManualTabla");
   if (emt) emt.addEventListener("input", toggleManualOverrideTabla);
-};
+
+  // --- soporte Enter en input de licencia ---
+  const licInput = document.getElementById("licencia-input");
+  if (licInput) {
+    licInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        verificarLicencia();
+      }
+    });
+  }
+});
+
+// ===== SISTEMA DE ACTIVACIÓN SIMPLE =====
+
+// Clave maestra privada
+const CLAVES_VALIDAS = [
+  "PmX9#72kL!Q4zR"
+];
+
+// Verificar clave
+function verificarLicencia() {
+  const input = document.getElementById("licencia-input");
+  const overlay = document.getElementById("licencia-overlay");
+  if (!input || !overlay) {
+    alert("Error de activación: elemento no encontrado.");
+    return;
+  }
+
+  const clave = input.value.trim();
+  if (!clave) {
+    alert("Ingrese la contraseña de activación.");
+    input.focus();
+    return;
+  }
+
+  if (CLAVES_VALIDAS.includes(clave)) {
+    try {
+      localStorage.setItem("licenciaActiva", "true");
+      overlay.style.display = "none";
+      input.value = "";
+      alert("Activación correcta. La app ya está lista para usar.");
+    } catch (err) {
+      console.error("Error guardando licencia:", err);
+      alert("Error guardando licencia en el dispositivo.");
+    }
+  } else {
+    alert("Contraseña incorrecta");
+    input.focus();
+  }
+}
