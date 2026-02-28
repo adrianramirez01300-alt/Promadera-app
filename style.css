@@ -1,0 +1,124 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f2f4f8;
+  padding-bottom: 70px;
+}
+
+.pantalla {
+  display: none;
+  padding: 20px;
+}
+
+.activa {
+  display: block;
+}
+
+h1 {
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+input, select, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+button {
+  background: #2e7d32;
+  color: white;
+  border: none;
+  font-size: 16px;
+}
+
+#resultado, #resultadoTabla {
+  font-size: 32px;
+  text-align: center;
+  margin-top: 20px;
+  color: #2e7d32;
+}
+
+.nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: white;
+  display: flex;
+  justify-content: space-around;
+  border-top: 1px solid #ccc;
+}
+
+.nav button {
+  flex: 1;
+  padding: 15px;
+  background: white;
+  color: black;
+  border: none;
+  font-weight: bold;
+}
+
+/* resaltado para inputs de override manual */
+input#extraManual, input#extraManualTabla {
+  background: #fffbe6;
+  border: 1px dashed #f0b429;
+}
+
+/* CONFIG: estilos para filas de madera */
+.madera-row {
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.madera-row label {
+  font-weight: 600;
+  display: block;
+  margin-top: 8px;
+}
+
+.madera-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.btn-eliminar {
+  background: #c62828;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* pequeño ajuste para icono tablas */
+.icon-tablas { display:inline-block; }
+
+.header-simple {
+  background: #f2f4f8;
+  color: #2e7d32;
+  text-align: center;
+  padding: 20px 0 12px 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  position: relative;
+}
+
+.header-simple::after {
+  content: "";
+  width: 60px;
+  height: 3px;
+  background: #2e7d32;
+  display: block;
+  margin: 8px auto 0;
+  border-radius: 2px;
+}

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>MaderaControl</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2e7d32">
+
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+
+<body>
+  <div class="header-simple">
+  Sistema de Gestión Maderera
+</div>
+
+  <!-- BLOQUES -->
+  <div id="bloques" class="pantalla activa">
+    <h1>🪵 Bloques</h1>
+
+    <label>Tipo madera</label>
+    <select id="madera"></select>
+
+    <label>Ancho (pulg)</label>
+    <input type="number" id="ancho" min="0">
+
+    <label>Largo (pulg)</label>
+    <input type="number" id="largo" min="0">
+
+    <label>Altura (pies)</label>
+    <input type="number" id="altura" min="0">
+
+    <label>Tipo venta</label>
+    <select id="tipoVenta">
+      <option value="BRUTO">Bruto</option>
+      <option value="ASERRADO">Aserrado</option>
+      <option value="ASERRADO+CEPILLADO">Aserrado + Cepillado</option>
+    </select>
+
+    <!-- Campo de override: valor extra manual -->
+    <label>Valor Rayada y/o cepillada forma manual - Opcional</label>
+    <input type="number" id="extraManual" placeholder="Ej: 12000" min="0">
+
+    <button onclick="calcular()">Calcular</button>
+
+    <p id="piesBloque">Pies: 0</p>
+    <h2 id="resultado">$0</h2>
+    <p id="utilidad"></p>
+
+    <button onclick="guardarVenta()">Guardar Venta</button>
+  </div>
+
+  <!-- TABLAS -->
+  <div id="tablas" class="pantalla">
+    <!-- Icono SVG de tablas en lugar del serrucho -->
+    <h1>
+      <span class="icon-tablas" aria-hidden="true">
+        <!-- Simple SVG: tres tablas apiladas -->
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+          <rect x="1" y="4" width="22" height="3" rx="0.8" fill="#8B5E3C"/>
+          <rect x="2" y="10" width="20" height="3" rx="0.8" fill="#9E6F48"/>
+          <rect x="3" y="16" width="18" height="3" rx="0.8" fill="#B07F5B"/>
+        </svg>
+      </span>
+      <span style="margin-left:8px; vertical-align: middle;">Tablas</span>
+    </h1>
+
+    <label>Tipo madera</label>
+    <select id="maderaTabla"></select>
+
+    <label>Ancho (pulg)</label>
+    <input type="number" id="anchoTabla" min="0">
+
+    <label>Grosor (cm)</label>
+    <!-- permite decimales -->
+    <input type="number" id="grosorTabla" min="0" step="0.01">
+
+    <label>Altura (pies)</label>
+    <input type="number" id="alturaTabla" min="0">
+
+    <label>Cantidad</label>
+    <input type="number" id="cantidadTabla" min="1">
+
+    <label>Cepillada</label>
+    <select id="cepilladaTabla">
+      <option value="NO">No</option>
+      <option value="SI">Sí</option>
+    </select>
+
+    <!-- Campo override para tablas -->
+    <label>Valor Rayada y/o cepillada forma manual - Opcional</label>
+    <input type="number" id="extraManualTabla" placeholder="Ej: 8000" min="0">
+
+    <button onclick="calcularTabla()">Calcular</button>
+
+    <p id="piesTablaTot">Pies totales: 0</p>
+
+    <h2 id="resultadoTabla">$0</h2>
+    <p id="utilidadTabla"></p>
+
+    <button onclick="guardarVentaTabla()">Guardar Venta</button>
+  </div>
+
+  <!-- SEMANA -->
+  <div id="semana" class="pantalla">
+    <h1>📊 Semana</h1>
+    <p id="resumenSemana"></p>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="config" class="pantalla">
+    <h1>⚙ Configuración</h1>
+
+    <h3>Procesos</h3>
+
+    <label>Valor Aserrado por pie</label>
+    <input type="number" id="configAserrado">
+
+    <label>Valor Cepillado por pie</label>
+    <input type="number" id="configCepillado">
+
+    <h3>Maderas</h3>
+    <div id="listaMaderas"></div>
+
+    <h4>Agregar nueva madera</h4>
+
+    <label>Nombre</label>
+    <input type="text" id="nuevaMaderaNombre">
+
+    <label>Costo por pie</label>
+    <input type="number" id="nuevaMaderaCosto">
+
+    <label>Precio público por pie</label>
+    <input type="number" id="nuevaMaderaPublico">
+
+    <button onclick="agregarMadera()">Agregar</button>
+    <button onclick="guardarConfig()">Guardar Cambios</button>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav">
+    <button onclick="mostrar('bloques')">Bloques</button>
+    <button onclick="mostrar('tablas')">Tablas</button>
+    <button onclick="mostrar('semana')">Semana</button>
+    <button onclick="mostrar('config')">Config</button>
+  </div>
+
+  <script src="app.js"></script>
+
+  <script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>
