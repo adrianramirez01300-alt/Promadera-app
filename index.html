@@ -6,10 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2e7d32">
-
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#2e7d32">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 
 <body>
@@ -67,10 +66,8 @@
 
   <!-- TABLAS -->
   <div id="tablas" class="pantalla">
-    <!-- Icono SVG de tablas en lugar del serrucho -->
     <h1>
       <span class="icon-tablas" aria-hidden="true">
-        <!-- Simple SVG: tres tablas apiladas -->
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
           <rect x="1" y="4" width="22" height="3" rx="0.8" fill="#8B5E3C"/>
           <rect x="2" y="10" width="20" height="3" rx="0.8" fill="#9E6F48"/>
@@ -87,7 +84,6 @@
     <input type="number" id="anchoTabla" min="0">
 
     <label>Grosor (cm)</label>
-    <!-- permite decimales -->
     <input type="number" id="grosorTabla" min="0" step="0.01">
 
     <label>Altura (pies)</label>
@@ -97,10 +93,10 @@
     <input type="number" id="cantidadTabla" min="1">
 
     <label>Tipo Tabla</label>
-<select id="tipoTabla">
-  <option value="ASERRADO">Aserrada</option>
-  <option value="ASERRADO+CEPILLADO">Aserrada + Cepillada</option>
-</select>
+    <select id="tipoTabla">
+      <option value="ASERRADO">Aserrada</option>
+      <option value="ASERRADO+CEPILLADO">Aserrada + Cepillada</option>
+    </select>
 
     <!-- Campo override para tablas -->
     <label>Valor Rayada y/o cepillada forma manual - Opcional</label>
@@ -118,11 +114,10 @@
 
   <!-- SEMANA -->
   <div id="semana" class="pantalla">
-  <h1>📊 Semana</h1>
-  <p id="resumenSemana"></p>
-
-  <div id="listaVentasHoy" style="margin-top:10px;"></div>
-</div>
+    <h1>📊 Semana</h1>
+    <p id="resumenSemana"></p>
+    <div id="listaVentasHoy" style="margin-top:10px;"></div>
+  </div>
 
   <!-- CONFIG -->
   <div id="config" class="pantalla">
@@ -131,10 +126,11 @@
     <h3>Procesos</h3>
 
     <label>Valor Aserrado por pie</label>
-    <input type="number" id="configAserrado">
+    <!-- ahora texto formateado -->
+    <input type="text" inputmode="numeric" id="configAserrado" oninput="formatearMiles(this)">
 
     <label>Valor Cepillado por pie</label>
-    <input type="number" id="configCepillado">
+    <input type="text" inputmode="numeric" id="configCepillado" oninput="formatearMiles(this)">
 
     <h3>Maderas</h3>
     <div id="listaMaderas"></div>
@@ -145,10 +141,10 @@
     <input type="text" id="nuevaMaderaNombre">
 
     <label>Costo por pie</label>
-    <input type="number" id="nuevaMaderaCosto">
+    <input type="text" inputmode="numeric" id="nuevaMaderaCosto" oninput="formatearMiles(this)">
 
     <label>Precio público por pie</label>
-    <input type="number" id="nuevaMaderaPublico">
+    <input type="text" inputmode="numeric" id="nuevaMaderaPublico" oninput="formatearMiles(this)">
 
     <button onclick="agregarMadera()">Agregar</button>
     <button onclick="guardarConfig()">Guardar Cambios</button>

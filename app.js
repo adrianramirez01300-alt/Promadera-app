@@ -1,6 +1,4 @@
-// app.js — versión corregida: ventas con id único y eliminación por id
-// Basado en tus archivos originales.  [oai_citation:2‡index.html](sediment://file_00000000f5e4720ea6731332693024b3)  [oai_citation:3‡app.js](sediment://file_0000000079ec71f5aa1b082400d45af0)
-
+// app.js — versión con formateo miles en Config y parsing seguro
 let config = JSON.parse(localStorage.getItem("config")) || {
   maderas: {
     "Cedro": { costo: 5000, publico: 6500 },
@@ -15,10 +13,20 @@ let config = JSON.parse(localStorage.getItem("config")) || {
 function safeKey(name) {
   return name.replace(/\s+/g, '__');
 }
-
 function makeId() {
-  // Cadena única suficientemente buena para este uso local (timestamp + random)
   return String(Date.now()) + '_' + Math.random().toString(36).slice(2);
+}
+
+/* ---------- Formateo miles (Config) ---------- */
+function formatearMiles(input) {
+  // elimina todo lo que no sea dígito
+  let valor = (input.value || "").toString().replace(/\D/g, "");
+  if (valor === "") {
+    input.value = "";
+    return;
+  }
+  // muestra con separador de miles para Colombia
+  input.value = Number(valor).toLocaleString("es-CO");
 }
 
 /* ---------- Navegación ---------- */
@@ -201,7 +209,6 @@ function guardarEnStorage(total) {
   const hoy = new Date().toISOString().split("T")[0];
   let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
 
-  // añadir venta con id único
   const nuevaVenta = {
     id: makeId(),
     fecha: hoy,
@@ -209,7 +216,6 @@ function guardarEnStorage(total) {
   };
   ventas.push(nuevaVenta);
 
-  // mantener solo últimos 7 días (mismo comportamiento anterior)
   ventas = ventas.filter(v => {
     const fechaVenta = new Date(v.fecha);
     const diff = (new Date() - fechaVenta) / (1000 * 60 * 60 * 24);
@@ -244,23 +250,19 @@ function actualizarResumen() {
   const hoy = new Date().toISOString().split("T")[0];
   let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
 
-  // filtrar ventas solo de los últimos 7 días (por seguridad igual que antes)
   ventas = ventas.filter(v => {
     const fechaVenta = new Date(v.fecha);
     const diff = (new Date() - fechaVenta) / (1000 * 60 * 60 * 24);
     return diff <= 7;
   });
 
-  // ventas hoy (y orden natural)
   const ventasHoy = ventas.filter(v => v.fecha === hoy);
 
   const totalHoy = ventasHoy.reduce((sum, v) => sum + (v.total || 0), 0);
 
-  // Mostrar total
   const resumen = document.getElementById("resumenSemana");
   if (resumen) resumen.textContent = "Ventas hoy: $" + totalHoy.toLocaleString();
 
-  // Mostrar lista de ventas individuales
   const lista = document.getElementById("listaVentasHoy");
   if (!lista) return;
 
@@ -272,10 +274,10 @@ function actualizarResumen() {
     div.style.justifyContent = "space-between";
     div.style.marginBottom = "6px";
 
-    // usamos el id como string seguro en el onclick
     div.innerHTML = `
       <span>$${(venta.total || 0).toLocaleString()}</span>
-      <button onclick="eliminarVenta('${venta.id}')" style="border:none;background:none;color:red;font-weight:bold;cursor:pointer;">🗑</button>
+      <button onclick="eliminarVenta('${venta.id}')"
+        style="border:none;background:none;color:red;font-weight:bold;cursor:pointer;">🗑</button>
     `;
 
     lista.appendChild(div);
@@ -288,7 +290,6 @@ function eliminarVenta(id) {
 
   let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
 
-  // filtrar por id (el que coincide se elimina, únicamente ese)
   ventas = ventas.filter(v => v.id !== String(id));
 
   localStorage.setItem("ventas", JSON.stringify(ventas));
@@ -300,8 +301,8 @@ function eliminarVenta(id) {
 function cargarConfigUI() {
   const asErr = document.getElementById("configAserrado");
   const ceP = document.getElementById("configCepillado");
-  if (asErr) asErr.value = config.aserrado;
-  if (ceP) ceP.value = config.cepillado;
+  if (asErr) asErr.value = Number(config.aserrado || 0).toLocaleString("es-CO");
+  if (ceP) ceP.value = Number(config.cepillado || 0).toLocaleString("es-CO");
 
   const contenedor = document.getElementById("listaMaderas");
   if (!contenedor) return;
@@ -319,10 +320,10 @@ function cargarConfigUI() {
       <input type="text" id="nombre_${key}" value="${nombre}">
 
       <label>Costo por pie</label>
-      <input type="number" id="costo_${key}" value="${madera.costo}">
+      <input type="text" inputmode="numeric" oninput="formatearMiles(this)" id="costo_${key}" value="${Number(madera.costo || 0).toLocaleString('es-CO')}">
 
       <label>Precio público</label>
-      <input type="number" id="publico_${key}" value="${madera.publico}">
+      <input type="text" inputmode="numeric" oninput="formatearMiles(this)" id="publico_${key}" value="${Number(madera.publico || 0).toLocaleString('es-CO')}">
 
       <div class="madera-actions">
         <button class="btn-eliminar" onclick="eliminarMadera('${nombre}')">Eliminar</button>
@@ -334,8 +335,13 @@ function cargarConfigUI() {
 }
 
 function guardarConfig() {
-  config.aserrado = parseFloat(document.getElementById("configAserrado").value || 0);
-  config.cepillado = parseFloat(document.getElementById("configCepillado").value || 0);
+  // quitar puntos y parsear
+  config.aserrado = parseFloat(
+    (document.getElementById("configAserrado").value || "0").toString().replace(/\./g, "")
+  ) || 0;
+  config.cepillado = parseFloat(
+    (document.getElementById("configCepillado").value || "0").toString().replace(/\./g, "")
+  ) || 0;
 
   const nuevasMaderas = {};
 
@@ -348,8 +354,8 @@ function guardarConfig() {
     if (!elNombre) return;
 
     const nuevoNombre = elNombre.value.trim();
-    const nuevoCosto = parseFloat(elCosto.value || 0);
-    const nuevoPublico = parseFloat(elPublico.value || 0);
+    const nuevoCosto = parseFloat((elCosto.value || "0").toString().replace(/\./g, "")) || 0;
+    const nuevoPublico = parseFloat((elPublico.value || "0").toString().replace(/\./g, "")) || 0;
 
     if (!nuevoNombre) return;
 
@@ -396,8 +402,8 @@ function eliminarMadera(nombre) {
 
 function agregarMadera() {
   const nombre = document.getElementById("nuevaMaderaNombre").value.trim();
-  const costo = parseFloat(document.getElementById("nuevaMaderaCosto").value || 0);
-  const publico = parseFloat(document.getElementById("nuevaMaderaPublico").value || 0);
+  const costo = parseFloat((document.getElementById("nuevaMaderaCosto").value || "0").toString().replace(/\./g, "")) || 0;
+  const publico = parseFloat((document.getElementById("nuevaMaderaPublico").value || "0").toString().replace(/\./g, "")) || 0;
 
   if (!nombre || !costo || !publico) {
     alert("Completa todos los datos");
@@ -421,17 +427,14 @@ function agregarMadera() {
 
 /* ---------- Inicializar (DOMContentLoaded) ---------- */
 document.addEventListener('DOMContentLoaded', function () {
-  // cargar configuración
   config = JSON.parse(localStorage.getItem("config")) || config;
 
-  // migración: asegurar ids en ventas antiguas
   ensureVentasHaveIds();
 
   cargarMaderas();
   actualizarResumen();
   cargarConfigUI();
 
-  // Activación simple (solo si no está activa)
   try {
     const activa = localStorage.getItem("licenciaActiva");
     const overlay = document.getElementById("licencia-overlay");
@@ -442,7 +445,6 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
       if (!activa) {
         overlay.style.display = "flex";
-        // foco en input si existe
         if (licenciaInput) {
           licenciaInput.focus();
         }
@@ -454,13 +456,11 @@ document.addEventListener('DOMContentLoaded', function () {
     console.warn("Error comprobando licencia:", err);
   }
 
-  // listeners para comportamiento override UX
   const em = document.getElementById("extraManual");
   if (em) em.addEventListener("input", toggleManualOverride);
   const emt = document.getElementById("extraManualTabla");
   if (emt) emt.addEventListener("input", toggleManualOverrideTabla);
 
-  // --- soporte Enter en input de licencia ---
   const licInput = document.getElementById("licencia-input");
   if (licInput) {
     licInput.addEventListener('keypress', function (e) {
@@ -471,14 +471,11 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-// ===== SISTEMA DE ACTIVACIÓN SIMPLE =====
-
-// Clave maestra privada
+// ===== ACTIVACIÓN =====
 const CLAVES_VALIDAS = [
   "PmX9#72kL!Q4zR"
 ];
 
-// Verificar clave
 function verificarLicencia() {
   const input = document.getElementById("licencia-input");
   const overlay = document.getElementById("licencia-overlay");
