@@ -212,14 +212,51 @@ function guardarEnStorage(total) {
 
 function actualizarResumen() {
   const hoy = new Date().toISOString().split("T")[0];
-  const ventas = JSON.parse(localStorage.getItem("ventas")) || [];
+  let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
 
-  const ventasHoy = ventas
-    .filter(v => v.fecha === hoy)
-    .reduce((sum, v) => sum + v.total, 0);
+  const ventasHoy = ventas.filter(v => v.fecha === hoy);
 
-  const el = document.getElementById("resumenSemana");
-  if (el) el.textContent = "Ventas hoy: $" + ventasHoy.toLocaleString();
+  const totalHoy = ventasHoy.reduce((sum, v) => sum + v.total, 0);
+
+  // Mostrar total
+  const resumen = document.getElementById("resumenSemana");
+  if (resumen) resumen.textContent = "Ventas hoy: $" + totalHoy.toLocaleString();
+
+  // Mostrar lista de ventas individuales
+  const lista = document.getElementById("listaVentasHoy");
+  if (!lista) return;
+
+  lista.innerHTML = "";
+
+  ventasHoy.forEach((venta, index) => {
+    const div = document.createElement("div");
+    div.style.display = "flex";
+    div.style.justifyContent = "space-between";
+    div.style.marginBottom = "6px";
+
+    div.innerHTML = `
+      <span>$${venta.total.toLocaleString()}</span>
+      <button onclick="eliminarVenta(${index})" style="border:none;background:none;color:red;font-weight:bold;cursor:pointer;">🗑</button>
+    `;
+
+    lista.appendChild(div);
+  });
+}
+function eliminarVenta(index) {
+  const hoy = new Date().toISOString().split("T")[0];
+  let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
+
+  const ventasHoy = ventas.filter(v => v.fecha === hoy);
+
+  if (!confirm("¿Eliminar esta venta?")) return;
+
+  const ventaAEliminar = ventasHoy[index];
+
+  ventas = ventas.filter(v => !(v.fecha === hoy && v.total === ventaAEliminar.total));
+
+  localStorage.setItem("ventas", JSON.stringify(ventas));
+
+  actualizarResumen();
 }
 
 /* ---------- CONFIG UI (edición + borrado) ---------- */
