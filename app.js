@@ -1,5 +1,5 @@
-// app.js — versión corregida (incluye lógica tablas consistente con bloques)
-// Basado en tu archivo original (revisado).  [oai_citation:2‡app.js](sediment://file_00000000e988720e8748549491be79b8)
+// app.js — versión corregida: ventas con id único y eliminación por id
+// Basado en tus archivos originales.  [oai_citation:2‡index.html](sediment://file_00000000f5e4720ea6731332693024b3)  [oai_citation:3‡app.js](sediment://file_0000000079ec71f5aa1b082400d45af0)
 
 let config = JSON.parse(localStorage.getItem("config")) || {
   maderas: {
@@ -14,6 +14,11 @@ let config = JSON.parse(localStorage.getItem("config")) || {
 /* ---------- Utils ---------- */
 function safeKey(name) {
   return name.replace(/\s+/g, '__');
+}
+
+function makeId() {
+  // Cadena única suficientemente buena para este uso local (timestamp + random)
+  return String(Date.now()) + '_' + Math.random().toString(36).slice(2);
 }
 
 /* ---------- Navegación ---------- */
@@ -59,7 +64,6 @@ function toggleManualOverride() {
   }
 }
 
-// ---- Ajuste: ahora opera sobre el selector tipoTabla (no cepilladaTabla) ----
 function toggleManualOverrideTabla() {
   const input = document.getElementById("extraManualTabla");
   const manual = parseFloat((input && input.value) || "0");
@@ -197,8 +201,15 @@ function guardarEnStorage(total) {
   const hoy = new Date().toISOString().split("T")[0];
   let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
 
-  ventas.push({ fecha: hoy, total });
+  // añadir venta con id único
+  const nuevaVenta = {
+    id: makeId(),
+    fecha: hoy,
+    total: total
+  };
+  ventas.push(nuevaVenta);
 
+  // mantener solo últimos 7 días (mismo comportamiento anterior)
   ventas = ventas.filter(v => {
     const fechaVenta = new Date(v.fecha);
     const diff = (new Date() - fechaVenta) / (1000 * 60 * 60 * 24);
@@ -210,13 +221,40 @@ function guardarEnStorage(total) {
   alert("Venta guardada");
 }
 
+/* Migración: asegurar que ventas antiguas tengan id */
+function ensureVentasHaveIds() {
+  let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
+  let changed = false;
+
+  ventas = ventas.map(v => {
+    if (!v.id) {
+      changed = true;
+      return Object.assign({}, v, { id: makeId() });
+    }
+    return v;
+  });
+
+  if (changed) {
+    localStorage.setItem("ventas", JSON.stringify(ventas));
+  }
+}
+
+/* ---------- Resumen y listado (con eliminación por id) ---------- */
 function actualizarResumen() {
   const hoy = new Date().toISOString().split("T")[0];
   let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
 
+  // filtrar ventas solo de los últimos 7 días (por seguridad igual que antes)
+  ventas = ventas.filter(v => {
+    const fechaVenta = new Date(v.fecha);
+    const diff = (new Date() - fechaVenta) / (1000 * 60 * 60 * 24);
+    return diff <= 7;
+  });
+
+  // ventas hoy (y orden natural)
   const ventasHoy = ventas.filter(v => v.fecha === hoy);
 
-  const totalHoy = ventasHoy.reduce((sum, v) => sum + v.total, 0);
+  const totalHoy = ventasHoy.reduce((sum, v) => sum + (v.total || 0), 0);
 
   // Mostrar total
   const resumen = document.getElementById("resumenSemana");
@@ -228,31 +266,30 @@ function actualizarResumen() {
 
   lista.innerHTML = "";
 
-  ventasHoy.forEach((venta, index) => {
+  ventasHoy.forEach((venta) => {
     const div = document.createElement("div");
     div.style.display = "flex";
     div.style.justifyContent = "space-between";
     div.style.marginBottom = "6px";
 
+    // usamos el id como string seguro en el onclick
     div.innerHTML = `
-      <span>$${venta.total.toLocaleString()}</span>
-      <button onclick="eliminarVenta(${index})" style="border:none;background:none;color:red;font-weight:bold;cursor:pointer;">🗑</button>
+      <span>$${(venta.total || 0).toLocaleString()}</span>
+      <button onclick="eliminarVenta('${venta.id}')" style="border:none;background:none;color:red;font-weight:bold;cursor:pointer;">🗑</button>
     `;
 
     lista.appendChild(div);
   });
 }
-function eliminarVenta(index) {
-  const hoy = new Date().toISOString().split("T")[0];
-  let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
 
-  const ventasHoy = ventas.filter(v => v.fecha === hoy);
-
+function eliminarVenta(id) {
+  if (!id) return;
   if (!confirm("¿Eliminar esta venta?")) return;
 
-  const ventaAEliminar = ventasHoy[index];
+  let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
 
-  ventas = ventas.filter(v => !(v.fecha === hoy && v.total === ventaAEliminar.total));
+  // filtrar por id (el que coincide se elimina, únicamente ese)
+  ventas = ventas.filter(v => v.id !== String(id));
 
   localStorage.setItem("ventas", JSON.stringify(ventas));
 
@@ -386,6 +423,10 @@ function agregarMadera() {
 document.addEventListener('DOMContentLoaded', function () {
   // cargar configuración
   config = JSON.parse(localStorage.getItem("config")) || config;
+
+  // migración: asegurar ids en ventas antiguas
+  ensureVentasHaveIds();
+
   cargarMaderas();
   actualizarResumen();
   cargarConfigUI();
