@@ -1,4 +1,5 @@
-// app.js — versión con formateo miles en Config y parsing seguro
+// app.js — versión corregida (calcularTabla arreglada y conversión correcta cm -> pies cúbicos)
+
 let config = JSON.parse(localStorage.getItem("config")) || {
   maderas: {
     "Cedro": { costo: 5000, publico: 6500 },
@@ -143,9 +144,10 @@ function calcularTabla() {
   const maderaEl = document.getElementById("maderaTabla");
   const madera = maderaEl ? maderaEl.value : null;
 
-  const ancho = parseFloat(document.getElementById("anchoTabla").value || "0");   // pulgadas
-  const grosor = parseFloat(document.getElementById("grosorTabla").value || "0"); // cm (como ustedes usan)
-  const altura = parseFloat(document.getElementById("alturaTabla").value || "0"); // en pies
+  // Ahora EN CM: ancho, grosor y altura (todos en cm)
+  const ancho = parseFloat(document.getElementById("anchoTabla").value || "0");   // cm
+  const grosor = parseFloat(document.getElementById("grosorTabla").value || "0"); // cm
+  const alturaCm = parseFloat(document.getElementById("alturaTabla").value || "0"); // cm (largo de la tabla en cm)
   const cantidad = parseFloat(document.getElementById("cantidadTabla").value || "0");
 
   const tipoTablaEl = document.getElementById("tipoTabla");
@@ -154,14 +156,25 @@ function calcularTabla() {
   const manualTabla = parseFloat(document.getElementById("extraManualTabla").value || "0");
 
   // validaciones básicas
-  if (!ancho || !grosor || !altura || !cantidad || !madera) {
-    alert("Completa todos los campos de la tabla (ancho, grosor, altura, cantidad y tipo de madera).");
+  if (!ancho || !grosor || !alturaCm || !cantidad || !madera) {
+    alert("Completa todos los campos de la tabla (ancho cm, grosor cm, altura cm, cantidad y tipo de madera).");
     return;
   }
 
-  // Fórmula: (ancho * grosor * altura) / 12 --> pie unitario
-  const pieUnitario = (ancho * grosor * altura) / 12;
-  const piesTotales = Math.round(pieUnitario * cantidad);
+  /* Conversión/ Fórmula explicada:
+     - volumen por unidad en cm^3 = ancho(cm) * grosor(cm) * altura(cm)
+     - 1 pie cúbico = 28,316.846592 cm^3
+     - pieUnitario = volumen_cm3 / 28,316.846592
+     - piesTotales = pieUnitario * cantidad
+  */
+  // Conversión correcta a PIE TABLAR (trabajando en cm)
+
+const anchoPulg = ancho / 2.54;
+const grosorPulg = grosor / 2.54;
+const largoPies = alturaCm / 30.48;
+
+const pieUnitario = (anchoPulg * grosorPulg * largoPies) / 12;
+const piesTotales = Math.round(pieUnitario * cantidad * 100) / 100;
 
   // mostrar pies totales
   const piesEl = document.getElementById("piesTablaTot");
